@@ -1,0 +1,28 @@
+---
+
+- name: Take snapshots of our vms
+  when: create_snapshots
+  block:
+    - name: Snapshot our controlplanes
+      when: snapshot_controlplanes
+      block:
+        - name: Snapshot our control plane nodes # noqa: var-naming[no-role-prefix]
+          ansible.builtin.include_tasks: create_snapshot.yml
+          vars:
+            vm_name: "{{ vm.name }}.{{ dns.clusterid }}.{{ dns.domain }}"
+          loop: "{{ control_planes }}"
+          loop_control:
+            loop_var: vm
+
+    - name: Snapshot our worker nodes
+      when: snapshot_workers and workers is defined
+      block:
+        - name: Snapshot our worker nodes # noqa: var-naming[no-role-prefix]
+          ansible.builtin.include_tasks: create_snapshot.yml
+          vars:
+            vm_name: "{{ vm.name }}.{{ dns.clusterid }}.{{ dns.domain }}"
+          loop: "{{ workers }}"
+          loop_control:
+            loop_var: vm
+
+...

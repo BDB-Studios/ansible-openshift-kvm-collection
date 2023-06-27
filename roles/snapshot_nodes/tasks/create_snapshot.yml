@@ -1,0 +1,12 @@
+---
+
+- name: "Create our snapshot for {{ vm_name }}"
+  ansible.builtin.command:
+    cmd: >
+      virsh snapshot-create-as
+        --domain {{ vm_name }}
+        --description "Ansible managed snapshot {{ ansible_date_time }}"
+  changed_when: true
+  failed_when: false
+
+...

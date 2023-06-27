@@ -1,0 +1,8 @@
+---
+
+snapshot_workers: false
+snapshot_controlplanes: false
+
+create_snapshots: true
+
+...
