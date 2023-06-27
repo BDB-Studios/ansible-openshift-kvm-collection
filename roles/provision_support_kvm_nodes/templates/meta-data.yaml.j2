@@ -1,0 +1,20 @@
+#cloud-config
+
+instance-id: {{ vm_instance_name.split('.')[0] }}
+
+network:
+  version: 2
+  ethernets:
+    {{ vm_interface_name }}:
+      dhcp4: false
+      dhcp6: false
+      addresses: [{{ vm_ip_addr }}/{{ vm_prefix }}]
+      gateway4: {{ vm_gateway }}
+      nameservers:
+        addresses:
+          - {{ vm_primary_ns }}
+          - {{ networking_defaults.ns1 }}
+          - {{ networking_defaults.ns2 }}
+        search:
+          - mms.local
+          - {{ cluster_id + '.' + networking_defaults.tld }}

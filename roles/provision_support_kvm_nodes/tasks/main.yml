@@ -1,0 +1,83 @@
+---
+
+- name: Ensure we have our required packages
+  ansible.builtin.dnf:
+    name: "{{ packages.os }}"
+    state: present
+
+- name: Ensure we have our required python packages
+  ansible.builtin.pip:
+    name: "{{ packages.pip }}"
+    state: present
+
+- name: Get our running kvm node facts
+  community.libvirt.virt:
+    command: list_vms
+  register: provision_support_kvm_nodes_running_vms
+
+- name: Set our vm name facts
+  ansible.builtin.set_fact: # noqa: var-naming[no-role-prefix]
+    vm_instance_name: "bastion.{{ cluster_id  }}.{{ networking_defaults.tld }}"
+
+- name: Create our bastion node
+  when:
+    - use_kvm_bastion | default(false) | bool
+  block:
+    - name: Create our bastion vm # noqa: var-naming[no-role-prefix]
+      ansible.builtin.include_tasks: kvm_machine.yml
+      when:
+        - kvm.bastion.vm_instance_name not in provision_support_kvm_nodes_running_vms.list_vms
+      vars:
+        vm_instance_name: "{{ kvm.bastion.vm_instance_name | default('bastion.' + cluster_id + '.' + networking_defaults.tld) }}"
+        vm_extra_disks: "{{ kvm.bastion.vm_extra_disks | default([]) }}"
+        vm_memory_size: "{{ kvm.bastion.vm_memory_size | default(nodes.bastion.ram) }}"
+        vm_vcpu: "{{ kvm.bastion.vm_vcpu | default(nodes.nodes.cpus)}}"
+        vm_root_disk_size: "{{ kvm.bastion.vm_root_disk_size | default(100) | replace('G','') }}"
+        vm_network: "{{ networking.bridge_name | default('br0') }}"
+        vm_interface_name: "{{ kvm.bastion.vm_interface_name | default('eth0')}}"
+        vm_ip_addr: "{{ kvm.bastion.ipaddr | default('192.168.160.10')}}"
+        vm_prefix: "{{ networking_defaults.prefix }}"
+        vm_gateway: "{{ networking_defaults.gateway }}"
+        vm_role: "bastion"
+        vm_primary_ns: "{{ kvm.bastion.ipaddr | default('192.168.160.10')}}"
+
+    - name: Wait for our cloud-init to complete on the vms
+      when:
+        - kvm.bastion.vm_instance_name not in provision_support_kvm_nodes_running_vms.list_vms
+      ansible.builtin.pause:
+        minutes: "{{ cloud_init_wait_minutes | default(10) }}"
+
+- name: Set our vm name facts
+  ansible.builtin.set_fact: # noqa: var-naming[no-role-prefix]
+    vm_instance_name: "bootstrap.{{ cluster_id  }}.{{ networking_defaults.tld }}"
+
+- name: Create our bootstrap node if required
+  when:
+    - use_kvm_bootstrap | default(false) | bool
+  block:
+    - name: Create our bootstrap node # noqa: var-naming[no-role-prefix]
+      when:
+        - vm_instance_name not in provision_support_kvm_nodes_running_vms.list_vms
+      ansible.builtin.import_role:
+        name: create_nodes
+      vars:
+        control_planes: []
+        workers: []
+        use_bridge: true
+        network_bridge_name: "{{ networking.bridge_name }}"
+
+- name: Create our auxillary instances when required
+  when:
+    - use_kvm_auxillary | default(false) | bool
+    - kvm.auxillary is defined
+  block:
+    - name: Create each auxillary set # noqa: var-naming[no-role-prefix]
+      ansible.builtin.include_tasks: auxillary_instances.yml
+      vars:
+        vm_role: "{{ aux_set.name }}"
+        instances: "{{ aux_set.instances }}"
+      loop: "{{ kvm.auxillary }}"
+      loop_control:
+        loop_var: aux_set
+
+...
