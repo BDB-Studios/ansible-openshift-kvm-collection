@@ -1,7 +1,7 @@
-microlise_collections.kvm.xrdp
+bdbstudios.openshift_kvm.xrdp
 =========
 
-Auxillary role called by `microlise_collections.kvm.prepare_server` can be consumed in other playbooks.
+Auxillary role called by `bdbstudios.openshift_kvm.prepare_server` can be consumed in other playbooks.
 Installs TigerVNC and XRDP server on an EL host. Will ensure we have a default desktop environment as well and
 if required install it. Configures the XRDP.ini file to allow windows RDP to connect.
 
@@ -57,7 +57,7 @@ Example Playbook
   become: true
 
   roles:
-    - role: microlise_collections.kvm.xrdp
+    - role: bdbstudios.openshift_kvm.xrdp
       when: using_xrdp | default(false) | bool
       tags:
         - xrdp
