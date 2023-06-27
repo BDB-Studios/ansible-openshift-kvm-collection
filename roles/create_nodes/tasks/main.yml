@@ -1,0 +1,67 @@
+---
+
+- name: Find the path of our qemu-kvm binary
+  ansible.builtin.command:
+    cmd: qemu-kvm
+  register: create_nodes_qemu_location
+  changed_when: true
+  failed_when: false
+
+- name: Set our qemu fact
+  ansible.builtin.set_fact:
+    create_nodes_qemu_path: "{{ create_nodes_qemu_location.stdout }}"
+
+- name: Create bootstrap nodes # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_tasks: create_vm.yml
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_network: "{{ dns.clusterid }}"
+    vm_mac_address: "{{ instance.macaddr }}"
+    vm_vcpu: "{{ instance.vm_cpu | default(4) }}"
+    vm_memory_size: "{{ instance.vm_memory | default(16384) }}"
+    vm_memory_unit: "{{ instance.vm_memory_unit | default('MiB') }}"
+    vm_root_disk_size: "{{ instance.vm_disk_size | default('120G') }}"
+    use_bonded_network: "{{ instance.bond is defined }}"
+  loop: "{{ bootstrap }}"
+  loop_control:
+    loop_var: instance
+
+- name: Wait for 10 minutes to allow bootstrap to become partially up
+  ansible.builtin.pause:
+    minutes: 10
+  when: skip_vm_wait is not defined or not skip_vm_wait | bool
+
+- name: Create control_plane nodes # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_tasks: create_vm.yml
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_network: "{{ dns.clusterid }}"
+    vm_mac_address: "{{ instance.macaddr }}"
+    vm_vcpu: "{{ instance.vm_cpu | default(4) }}"
+    vm_memory_size: "{{ instance.vm_memory | default(16384) }}"
+    vm_memory_unit: "{{ instance.vm_memory_unit | default('MiB') }}"
+    vm_root_disk_size: "{{ instance.vm_disk_size | default('120G') }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+    use_bonded_network: "{{ instance.bond is defined }}"
+  loop: "{{ control_planes }}"
+  loop_control:
+    loop_var: instance
+
+- name: Create worker nodes # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_tasks: create_vm.yml
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_network: "{{ dns.clusterid }}"
+    vm_mac_address: "{{ instance.macaddr }}"
+    vm_vcpu: "{{ instance.vm_cpu | default(4) }}"
+    vm_memory_size: "{{ instance.vm_memory | default(8192) }}"
+    vm_memory_unit: "{{ instance.vm_memory_unit | default('MiB') }}"
+    vm_root_disk_size: "{{ instance.vm_disk_size | default('120G') }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+    use_bonded_network: "{{ instance.bond is defined }}"
+  loop: "{{ workers }}"
+  when: workers is defined
+  loop_control:
+    loop_var: instance
+
+...

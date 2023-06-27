@@ -1,0 +1,27 @@
+---
+
+- name: Stop some services
+  ansible.builtin.systemd:
+    name: "{{ service }}"
+    state: stopped
+  loop:
+    - haproxy
+    - dhcpd
+    - httpd
+    - tftp.service
+  loop_control:
+    loop_var: service
+
+- name: Ensure our configuration directories are empty
+  ansible.builtin.file:
+    path: "{{ configuration_directory }}"
+    state: absent
+  loop:
+    - "/root/{{ dns.clusterid }}.{{ dns.domain }}/"
+    - "/var/lib/tftpboot/"
+    - /etc/haproxy/haproxy.cfg
+    - /root/packages
+    - /var/www/html/
+  loop_control:
+    loop_var: configuration_directory
+...

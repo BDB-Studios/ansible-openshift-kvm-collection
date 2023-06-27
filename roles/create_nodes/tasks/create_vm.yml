@@ -1,0 +1,35 @@
+---
+
+- name: "Create disk for {{ vm_instance_name }}"
+  ansible.builtin.command:
+    cmd: >
+      qemu-img create -f qcow2 -o cluster_size={{ qcow_cluster_size }}
+      /var/lib/libvirt/images/{{ vm_instance_name }}.qcow2
+      {{ vm_root_disk_size }}
+  args:
+    creates: "/var/lib/libvirt/images/{{ vm_instance_name }}.qcow2"
+
+- name: "Create extra disks for {{ vm_instance_name }} if defined"
+  ansible.builtin.command:
+    cmd: >
+      qemu-img create -f qcow2 -o cluster_size={{ qcow_cluster_size }}
+      /var/lib/libvirt/images/{{ vm_instance_name }}-{{ disk.device }}.qcow2
+      {{ disk.size }}
+  args:
+    creates: "/var/lib/libvirt/images/{{ vm_instance_name }}-{{ disk.device }}.qcow2"
+  loop: "{{ vm_extra_disks }}"
+  loop_control:
+    loop_var: disk
+  when: vm_extra_disks is defined
+
+- name: Define VirtualMachine {{ vm_instance_name }}
+  community.libvirt.virt:
+    name: "{{ vm_instance_name }}"
+    command: define
+    xml: "{{ lookup('template', 'templates/vm.xml.j2') }}"
+
+- name: Start VirtualMachine {{ vm_instance_name }}
+  community.libvirt.virt:
+    name: "{{ vm_instance_name }}"
+    state: running
+    autostart: "{{ vm_autostart | default(true) }}"

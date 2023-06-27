@@ -1,0 +1,31 @@
+---
+
+- name: List available networks
+  community.libvirt.virt_net:
+    command: list_nets
+  register: destroy_cluster_virtual_networks
+
+- name: Remove our virtual network if it exists
+  when: dns.clusterid in destroy_cluster_virtual_networks.list_nets
+  block:
+    - name: "Stop the  {{ dns.clusterid }} network"
+      community.libvirt.virt_net:
+        command: destroy
+        name: "{{ dns.clusterid }}"
+
+    - name: "Delete the  {{ dns.clusterid }} network"
+      community.libvirt.virt_net:
+        command: undefine
+        name: "{{ dns.clusterid }}"
+
+- name: Ensure we do not have a hosts entry
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "api.{{ dns.clusterid }}.{{ dns.domain }}"
+    backrefs: true
+    state: absent
+    owner: root
+    group: root
+    mode: 0644
+
+...

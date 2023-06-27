@@ -1,0 +1,41 @@
+---
+
+- name: Remove the cluster configuration
+  when: remove_cluster_config is defined and remove_cluster_config
+  ansible.builtin.include_tasks: remove_cluster_config.yml
+
+- name: Remove bootstrap nodes # noqa: var-naming[no-role-prefix]
+  when: remove_bootstrap is defined and remove_bootstrap
+  ansible.builtin.include_tasks: destroy_vm.yml
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+  loop: "{{ bootstrap }}"
+  loop_control:
+    loop_var: instance
+
+- name: Remove worker nodes # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_tasks: destroy_vm.yml
+  when: remove_workers is defined and remove_workers
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+  loop: "{{ workers | default([]) }}"
+  loop_control:
+    loop_var: instance
+
+- name: Remove control plane nodes # noqa: var-naming[no-role-prefix]
+  when: remove_controlplanes is defined and remove_controlplanes
+  ansible.builtin.include_tasks: destroy_vm.yml
+  vars:
+    vm_instance_name: "{{ instance.name }}.{{ dns.clusterid }}.{{ dns.domain  }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+  loop: "{{ control_planes | default([]) }}"
+  loop_control:
+    loop_var: instance
+
+- name: Remove the virtual network
+  when: remove_network is defined and remove_network
+  ansible.builtin.include_tasks: destroy_network.yml
+
+...
