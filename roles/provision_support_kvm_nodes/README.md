@@ -14,15 +14,17 @@ Role Variables
 
 Defaults in the module
 ```yaml
+
 nodes:
+  image:
+    bucket: "kvm-qemu-images"
   bastion:
-    image:
-      location: "s3"
-      bucket: "kvm-images"
-      name: "rhel-8.6-x86_64-kvm.qcow2"
-      os_variant: rhel8-unknown
-    ram: 16384
-    cpus: 8
+    name: "{{ bastion_kvm_image | default('AlmaLinux-8-GenericCloud-latest.x86_64.qcow2') }}"
+    url: "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/"
+    checksum: "c0ad09255d91288dac590d99c95197d83a2846f1bcbec3f4222fb04265a2a4d7"
+    os_variant: "rhel8-unknown"
+    ram: "{{ bastion_kvm_ram | default(16384) }}"
+    cpus: "{{ bastion_kvm_cpus | default(8) }}"
 
 ```
 
@@ -50,14 +52,13 @@ s3_access_key_id: "username"
 s3_secret_access_key: "password"
 s3_region: "setme"
 s3_url: "http://localhost:9090"
+s3_validate_certs: false
 
-using_rhel: true
+using_rhel: false
 admin_password: "secret"
 root_password: "super_secret"
 admin_user: "admin"
 admin_gecos: "Default admin user"
-rhel_username: "redhat_user"
-rhel_password: "redhat_password"
 
 networking_defaults:
   gateway: "192.168.0.254"
