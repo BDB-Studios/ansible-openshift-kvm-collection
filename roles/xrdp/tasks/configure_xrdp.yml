@@ -1,0 +1,115 @@
+---
+
+- name: Ensure that we have a gui installed on Fedora
+  when: ansible_distribution == "Fedora"
+  tags:
+    - kvm
+    - xprd
+  block:
+    - name: Ensure we have our desktop environment installed
+      ansible.builtin.dnf:
+        name: "{{ xrdp.packages.fedora.desktop }}"
+        state: present
+      register: desktop_installed
+
+    - name: Change default target to graphical.target # noqa: no-handler
+      ansible.builtin.file:
+        src: /usr/lib/systemd/system/graphical.target
+        dest: /etc/systemd/system/default.target
+        state: link
+        owner: root
+        group: root
+      when: desktop_installed is changed
+      notify:
+        - Reboot our system if the default desktop has changed
+
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install our XRDP packages
+      ansible.builtin.dnf:
+        name: "{{ xrdp.packages.fedora.xrdp }}"
+        state: present
+      notify: Enable and start xrdp
+      register: xrdp_installed
+
+- name: Ensure that we have a gui installed on RHEL
+  when: ansible_distribution != "Fedora"
+  tags:
+    - kvm
+    - xrdp
+  block:
+    - name: Ensure we have our desktop environment installed
+      ansible.builtin.dnf:
+        name: "{{ xrdp.packages.redhat.desktop }}"
+        state: present
+      register: desktop_installed
+
+    - name: Change default target to graphical.target # noqa: no-handler
+      ansible.builtin.file:
+        src: /usr/lib/systemd/system/graphical.target
+        dest: /etc/systemd/system/default.target
+        state: link
+        owner: root
+        group: root
+      notify:
+        - Reboot our system if the default desktop has changed
+
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install our XRDP packages
+      ansible.builtin.dnf:
+        name: "{{ xrdp.packages.redhat.xrdp }}"
+        state: present
+      notify: Enable and start xrdp
+      register: xrdp_installed
+
+
+- name: Ensure we allow our firewall to connect
+  ansible.posix.firewalld:
+    zone: public
+    permanent: true
+    port: "{{ port }}"
+    state: enabled
+  notify: Reload Firewall
+  tags:
+    - kvm
+    - xrdp
+  loop: "{{ xrdp.firewall_ports }}"
+  loop_control:
+    loop_var: port
+
+- name: Ensure we have modified our xrdp file so we can connect from windows hosts
+  ansible.builtin.lineinfile:
+    path: /etc/xrdp/xrdp.ini
+    regexp: "{{ term.search }}"
+    line: "{{ term.replace }}"
+  loop: "{{ xrdp.config }}"
+  loop_control:
+    loop_var: term
+  tags:
+    - kvm
+    - xrpd
+
+- name: Ensure we can log in with ad users if we are using active directory/ldap as an auth mechanism
+  when: use_active_directory | default(false) | bool
+  tags:
+    - kvm
+    - xrdp
+  block:
+    - name: Overwrite our xrdp-sesman file with our auth-session file
+      ansible.builtin.copy:
+        src: /etc/pam.d/system-auth
+        dest: /etc/pam.d/xrdp-sesman
+        remote_src: true
+        mode: preserve
+      notify:
+        - Restart XRDP
+
+- name: Flush our handlers
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - always
+
+...
