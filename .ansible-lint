@@ -9,6 +9,9 @@ skip_list:
   - template-instead-of-copy
   - no-tabs
 
+exclude_paths:
+  - .github
+
 offline: false
 
 ...
