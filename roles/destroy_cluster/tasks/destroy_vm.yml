@@ -1,0 +1,70 @@
+---
+
+- name: Get a list of our running vms
+  community.libvirt.virt:
+    command: list_vms
+  register: destroy_cluster_registered_vms
+
+- name: "Destroy {{ vm_instance_name }} if it exists in the list of running vms"
+  when: vm_instance_name in destroy_cluster_registered_vms.list_vms
+  block:
+    - name: "Stop VirtualMachine {{ vm_instance_name }}"
+      community.libvirt.virt:
+        name: "{{ vm_instance_name }}"
+        state: destroyed
+
+    - name: Attempt to cleanly remove the vm
+      block:
+        - name: Remove VirtualMachine definition for {{ vm_instance_name }}
+          community.libvirt.virt:
+            name: "{{ vm_instance_name }}"
+            command: undefine
+
+      rescue:
+        - name: Get a list of snapshots # noqa: risky-shell-pipe
+          ansible.builtin.shell:
+            cmd: >
+              virsh snapshot-list {{ vm_instance_name }} | wc -l
+          register: destroy_cluster_snapshot_list
+          changed_when: true
+          failed_when: false
+
+        - name: Delete our snapshots
+          ansible.builtin.command:
+            cmd: >
+              virsh snapshot-delete {{ vm_instance_name }} --current
+          register: destroy_cluster_snapshot_deleted
+          failed_when: false
+          changed_when: true
+          until: destroy_cluster_snapshot_deleted.rc == 1
+          retries: "{{ (destroy_cluster_snapshot_list.stdout | int) - 3 }}"
+
+        - name: Remove VirtualMachine definition for {{ vm_instance_name }}
+          when: not use_efi | default(false) | bool
+          community.libvirt.virt:
+            name: "{{ vm_instance_name }}"
+            command: undefine
+
+        - name: Remove EFI VirtualMachine definition for {{ vm_instance_name }}
+          when: use_efi | default(false) | bool
+          ansible.builtin.command:
+            cmd: |
+              virsh undefine {{ vm_instance_name }} --nvram
+          failed_when: false
+          changed_when: true
+
+    - name: "Delete disk for {{ vm_instance_name }}"
+      ansible.builtin.file:
+        path: "/var/lib/libvirt/images/{{ vm_instance_name }}.qcow2"
+        state: absent
+
+    - name: "Delete extra disks for {{ vm_instance_name }} if defined"
+      when: vm_extra_disks is defined
+      ansible.builtin.file:
+        path: "/var/lib/libvirt/images/{{ vm_instance_name }}-{{ disk.device }}.qcow2"
+        state: absent
+      loop: "{{ vm_extra_disks }}"
+      loop_control:
+        loop_var: disk
+
+...

@@ -1,0 +1,14 @@
+---
+
+# KVM Instances
+remove_bootstrap: false
+remove_controlplanes: false
+remove_workers: false
+
+# KVM Networking
+remove_network: false
+
+# Openshift Configuration
+remove_cluster_config: false
+
+...
