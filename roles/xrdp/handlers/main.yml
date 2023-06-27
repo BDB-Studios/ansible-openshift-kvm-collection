@@ -1,0 +1,25 @@
+---
+
+- name: Enable and start xrdp
+  ansible.builtin.systemd:
+    name: xrdp
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Reload Firewall
+  ansible.builtin.command:
+    cmd: "firewall-cmd --reload"
+  changed_when: true
+  failed_when: false
+
+- name: Restart XRDP
+  ansible.builtin.systemd:
+    name: xrdp
+    state: restarted
+
+- name: Reboot our system if the default desktop has changed
+  ansible.builtin.reboot:
+    reboot_timeout: 1200
+
+...

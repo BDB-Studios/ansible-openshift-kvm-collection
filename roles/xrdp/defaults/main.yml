@@ -1,0 +1,26 @@
+---
+
+xrdp:
+  packages:
+    fedora:
+      desktop:
+        - "@kde-desktop-environment"
+      xrdp:
+        - xrdp
+    redhat:
+      desktop:
+        - "@Server with GUI"
+      xrdp:
+        - "tigervnc-server"
+        - xrdp
+  config:
+    - search: "^#delay_ms=2000$"
+      replace: "delay_ms=2000"
+    - search: "^#disabled_encodings_mask=0$"
+      replace: "disabled_encodings_mask=0"
+    - search: "^#xserverbpp=24$"
+      replace: "xserverbpp=24"
+  firewall_ports:
+    - "3389/tcp"
+
+...

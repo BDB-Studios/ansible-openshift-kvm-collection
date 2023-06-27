@@ -1,0 +1,24 @@
+galaxy_info:
+  author: Brett Minnie
+  description: Install XRDP functionality on EL/Fedora
+  company: BDB Studios
+
+  license: GPL-2.0-or-later
+
+  min_ansible_version: "2.9"
+
+  platforms:
+    - name: Fedora
+      versions:
+        - "36"
+        - "37"
+        - "38"
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  galaxy_tags:
+    - infrastructure
+    - xrdp
+
+dependencies: []

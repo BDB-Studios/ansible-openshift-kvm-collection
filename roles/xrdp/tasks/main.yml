@@ -1,0 +1,8 @@
+---
+
+- name: Configure xrdp
+  ansible.builtin.include_tasks: configure_xrdp.yml
+  tags:
+    - xrdp
+    - kvm
+...
