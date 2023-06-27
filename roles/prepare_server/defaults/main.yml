@@ -1,0 +1,46 @@
+---
+
+virtualization_packages:
+  fedora:
+    - "@virtualization"
+    - python3-lxml
+    - python3-pip
+    - python3-requests-oauthlib
+    - cronie
+    - bridge-utils
+    - tuned
+  redhat:
+    - "@Development Tools"
+    - "@virtualization-hypervisor"
+    - "@virtualization-client"
+    - "@virtualization-platform"
+    - "@virtualization-tools"
+    - python3-lxml
+    - python3-pip
+    - python3-devel
+    - python3-requests-oauthlib
+    - cronie
+    - bridge-utils
+    - libguestfs-tools
+    - tuned
+  rocky:
+    - "@virtualization-hypervisor"
+    - "@virtualization-client"
+    - "@virtualization-platform"
+    - "@virtualization-tools"
+    - python3-lxml
+    - python3-pip
+    - python3-requests-oauthlib
+    - cronie
+    - bridge-utils
+    - tuned
+
+pip_packages:
+  - openshift
+  - ruamel.yaml
+
+listen_address: "{{ hostvars['localhost']['ansible_default_ipv4']['address'] | default('') }}"
+
+# Are we using Hashicorp Vault
+using_vault: false
+...

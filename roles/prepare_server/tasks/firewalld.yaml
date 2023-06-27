@@ -1,0 +1,138 @@
+---
+
+- name: Allow NFS traffic from VM's to Host
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    service: "{{ service }}"
+  with_items:
+    - nfs
+    - mountd
+    - rpc-bind
+  loop_control:
+    loop_var: service
+  tags:
+    - network
+  notify: Reload Firewall
+
+- name: Allow PXEBoot traffic from VM's to Host
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    service: "{{ service }}"
+  with_items:
+    - tftp
+    - dhcp
+    - http
+    - dns
+    - https
+  loop_control:
+    loop_var: service
+  tags:
+    - network
+  notify: Reload Firewall
+
+- name: Allow PXEBoot traffic from VM's to Host on alternate ports
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    port: "{{ port }}"
+  with_items:
+    - 8080/tcp
+  loop_control:
+    loop_var: port
+  tags:
+    - network
+    - kvm
+  notify: Reload Firewall
+
+- name: Allow Hashicorp Vault traffic from VM's to Host if we are using Hashicorp Vault
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    port: "{{ port }}"
+  with_items:
+    - 8200/tcp
+    - 8201/tcp
+  loop_control:
+    loop_var: port
+  tags:
+    - network
+    - kvm
+  when: using_vault | default(False) | bool
+  notify: Reload Firewall
+
+- name: Allow OpenShift traffic from VM's to Host
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    port: "{{ port }}"
+  with_items:
+    - 80/tcp
+    - 443/tcp
+    - 6443/tcp
+    - 22623/tcp
+  loop_control:
+    loop_var: port
+  tags:
+    - network
+    - kvm
+  notify: Reload Firewall
+
+- name: Allow OpenShift traffic from VM's to Proxy
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    port: "{{ port }}"
+  with_items:
+    - 3128/tcp
+  loop_control:
+    loop_var: port
+  tags:
+    - network
+    - kvm
+  notify: Reload Firewall
+  when: configure_squid_proxy | default(false) | bool
+
+- name: Allow NFS traffic from VM's to Host
+  ansible.posix.firewalld:
+    zone: libvirt
+    state: enabled
+    permanent: true
+    port: "{{ port }}"
+  with_items:
+    - 111/tcp
+    - 111/udp
+    - 2049/tcp
+    - 2049/udp
+  loop_control:
+    loop_var: port
+  tags:
+    - network
+    - kvm
+  notify: Reload Firewall
+
+- name: Allow OpenShift traffic from public to Host
+  ansible.posix.firewalld:
+    zone: public
+    state: enabled
+    permanent: true
+    port: "{{ openshift_port }}"
+  with_items:
+    - 80/tcp
+    - 443/tcp
+    - 6443/tcp
+  loop_control:
+    loop_var: openshift_port
+  tags:
+    - network
+    - kvm
+  notify: Reload Firewall
+
+...

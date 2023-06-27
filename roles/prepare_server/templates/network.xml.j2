@@ -1,0 +1,15 @@
+<network>
+  <name>{{ dns.clusterid }}</name>
+  <domain name="{{ dns.domain }}"/>
+  <forward mode='{{ network_forward_mode | default('nat') }}'/>
+  <dns>
+      <host ip='{{ networking_defaults.gateway }}'>
+        <hostname>bastion.{{ dns.domain }}</hostname>
+        <hostname>api-int.{{ dns.domain }}</hostname>
+        <hostname>api.{{ dns.domain }}</hostname>
+        <hostname>oauth-openshift.apps.{{ dns.domain }}</hostname>
+        <hostname>console-openshift-console.apps.{{ dns.domain }}</hostname>
+      </host>
+  </dns>
+    <ip address='{{ networking_defaults.gateway }}' netmask='{{ networking_defaults.subnet_mask }}' />
+</network>

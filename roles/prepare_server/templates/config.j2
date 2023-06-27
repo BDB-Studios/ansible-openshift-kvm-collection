@@ -1,0 +1,7 @@
+Host {{ networking_defaults.network | replace('.0', '.*' )}}
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+
+Host *.{{ dns.clusterid }}.{{ dns.domain }}
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null

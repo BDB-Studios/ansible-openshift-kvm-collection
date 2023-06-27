@@ -1,0 +1,45 @@
+---
+
+- name: Build IPv4 subnet
+  ansible.builtin.set_fact:
+    vm_subnet_ipv4: "{{ networking_defaults.network.split('.')[:3] | join('.') }}"
+    ipv4_listen_private:
+      - "{{ networking_defaults.network.split('.')[:3] | join('.') }}.1"
+    ipv4_listen_public:
+      - "{{ listen_address }}"
+  tags: always
+
+- name: "Define network {{ dns.clusterid }}"
+  community.libvirt.virt_net:
+    command: define
+    name: "{{ dns.clusterid }}"
+    xml: "{{ lookup('template', 'templates/network.xml.j2') }}"
+  notify:
+    - Activate network
+    - Autostart network
+  tags:
+    - network
+    - kvm
+
+- name: Flush our handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: "Get our interface fact"
+  community.libvirt.virt_net:
+    command: facts
+    name: "{{ dns.clusterid }}"
+  register: virt_net_facts
+  tags:
+    - always
+
+- name: Disable stp
+  block:
+    - name: Turn stp off on our bridge
+      ansible.builtin.command:
+        cmd: >
+          brctl stp {{ ansible_libvirt_networks[cluster_id].bridge }} off
+      register: brctl_output
+      failed_when: false
+      changed_when: true
+
+...

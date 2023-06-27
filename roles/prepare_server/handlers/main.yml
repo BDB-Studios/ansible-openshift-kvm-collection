@@ -1,0 +1,48 @@
+---
+
+- name: Reload Firewall
+  ansible.builtin.command:
+    cmd: "firewall-cmd --reload"
+  changed_when: true
+  failed_when: proxysql_mysql_autocommit_false_is_transaction
+
+- name: Enable and Start libvirtd
+  ansible.builtin.systemd:
+    name: libvirtd
+    state: started
+    enabled: true
+  tags:
+    - kvm
+
+- name: Restart libvirtd
+  ansible.builtin.systemd:
+    name: libvirtd
+    state: restarted
+  tags:
+    - kvm
+
+- name: Start and Enable Tuned
+  ansible.builtin.systemd:
+    name: tuned
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Set tuned profile
+  ansible.builtin.command:
+    cmd: |
+      tuned-adm profile virtual-host
+  changed_when: true
+  failed_when: false
+
+- name: Activate network
+  community.libvirt.virt_net:
+    state: active
+    name: "{{ dns.clusterid }}"
+
+- name: Autostart network
+  community.libvirt.virt_net:
+    autostart: true
+    name: "{{ dns.clusterid }}"
+
+...
