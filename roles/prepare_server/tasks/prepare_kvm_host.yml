@@ -10,9 +10,10 @@
         cmd: nmcli conn show "System {{ ansible_default_ipv4.alias }}" | grep "ipv4\.dns\:"
       changed_when: true
       failed_when: false
-      register: nmcli_output
+      register: prepare_server_nmcli_output
 
     - name: Ensure our default interface is configured for manual and has the local machine as primary dns
+      when: ansible_default_ipv4.address not in prepare_server_nmcli_output.stdout
       ansible.builtin.shell:
         cmd: >
           nmcli conn mod "System {{ ansible_default_ipv4.alias }}"
@@ -20,7 +21,6 @@
           nmcli conn up "System {{ ansible_default_ipv4.alias }}"
       changed_when: true
       failed_when: false
-      when: ansible_default_ipv4.address not in nmcli_output.stdout
 
 - name: Ensure that we have the epel repository installed
   ansible.builtin.dnf:
@@ -38,7 +38,7 @@
     - Restart libvirtd
     - Start and Enable Tuned
     - Set tuned profile
-  register: kvm_installed
+  register: prepare_server_kvm_installed
   tags:
     - kvm
 
@@ -58,30 +58,30 @@
     - kvm
 
 - name: Verify KVM module is loaded and supported by the hardware
+  when: prepare_server_kvm_installed.changed # noqa: no-handler
   ansible.builtin.shell:
     cmd: "set -o pipefail && lsmod | grep -i kvm"
-  register: result
-  failed_when: result.rc != 0
-  changed_when: result.rc == 0
-  when: kvm_installed.changed # noqa: no-handler
+  register: prepare_server_kvm_supported
+  failed_when: prepare_server_kvm_supported.rc != 0
+  changed_when: prepare_server_kvm_supported.rc == 0
   tags:
     - kvm
 
 - name: Check /etc/systemd/network/10-mainif.network
   ansible.builtin.stat:
     path: /etc/systemd/network/10-mainif.network
-  register: stat_result
+  register: prepare_server_stat_result
   tags:
     - network
     - kvm
 
 - name: Add IPForward=ipv4 to /etc/systemd/network/10-mainif.network
+  when: prepare_server_stat_result.stat.exists
   ansible.builtin.lineinfile:
     path: /etc/systemd/network/10-mainif.network
     line: 'IPForward=ipv4'
     insertafter: '^\[Network\]'
     regexp: '^IPForward='
-  when: stat_result.stat.exists
   tags:
     - network
     - kvm

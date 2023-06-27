@@ -14,6 +14,18 @@ Role Variables
 
 ```yaml
 ---
+# Our basic network configurations for the kvm network
+networking_defaults:
+  network: 192.168.0.0
+  gateway: 192.168.0.254
+
+# Our cluster name, internal dns domain and DNS forwarders, ideally we should use the host/kvm helper as forwarder one as we'll
+# be running bind/named on it
+dns:
+  cluster_id: test
+  forwarder1: 8.8.8.8
+  forwarder2: 1.1.1.1
+  domain: openshift.local
 
 virtualization_packages: # Packages required to run the KVM server, we have Rocky and Debian declared here as they have been used for testing
   fedora:
@@ -49,13 +61,23 @@ virtualization_packages: # Packages required to run the KVM server, we have Rock
 
 listen_address: "{{ hostvars['localhost']['ansible_default_ipv4']['address'] | default('') }}"
 
+# This is to try and create a public bridge, it is buggy
 configure_networking: false
-is_hq_kvm: false
 
 ...
 
 ```
 
+Exported Facts
+--------------
+
+```yaml
+    prepare_server_vm_subnet_ipv4: "{{ networking_defaults.network.split('.')[:3] | join('.') }}"
+    prepare_server_ipv4_listen_private:
+      - "{{ networking_defaults.network.split('.')[:3] | join('.') }}.1"
+    prepare_server_ipv4_listen_public:
+      - "{{ listen_address }}"
+```
 Dependencies
 ------------
 
