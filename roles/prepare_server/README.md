@@ -77,6 +77,8 @@ Exported Facts
       - "{{ networking_defaults.network.split('.')[:3] | join('.') }}.1"
     prepare_server_ipv4_listen_public:
       - "{{ listen_address }}"
+    prepare_server_virt_net_facts: {} # A dictionary of facts returned by community.libvirt.virt_net facts
+
 ```
 Dependencies
 ------------
