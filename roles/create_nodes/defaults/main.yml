@@ -1,0 +1,6 @@
+---
+
+qcow_cluster_size: "2M"
+iothread_type: "threads"
+
+...
