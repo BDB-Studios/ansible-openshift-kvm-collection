@@ -1,0 +1,29 @@
+---
+
+- name: Prepare our host for KVM
+  ansible.builtin.include_tasks: prepare_kvm_host.yml
+  tags:
+    - network
+    - kvm
+
+- name: Ensure we have xrdp and the graphical installation configured
+  ansible.builtin.include_role:
+    name: bdbstudios.openshift_kvm.xrdp
+  tags:
+    - kvm
+    - xrdp
+
+- name: Configure our host to KVM firewall options
+  ansible.builtin.include_tasks: firewalld.yaml
+  tags:
+    - network
+    - kvm
+
+- name: Create our KVM Network
+  when: not use_bridge | default(false)
+  ansible.builtin.include_tasks: create_network.yml
+  tags:
+    - network
+    - kvm
+
+...

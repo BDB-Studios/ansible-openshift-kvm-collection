@@ -1,0 +1,119 @@
+---
+
+# This is a bit buggy as different EL versions have a different way of creating their network connections, we can possibly
+# break internal dns resolution. We have noted in the documentation that the ideal way to set this up is via a static config
+- name: Configure out networking
+  when: configure_networking | default(false) | bool
+  block:
+    - name: Check our dns settings # noqa:  risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: nmcli conn show "System {{ ansible_default_ipv4.alias }}" | grep "ipv4\.dns\:"
+      changed_when: true
+      failed_when: false
+      register: prepare_server_nmcli_output
+
+    - name: Ensure our default interface is configured for manual and has the local machine as primary dns
+      when: ansible_default_ipv4.address not in prepare_server_nmcli_output.stdout
+      ansible.builtin.shell:
+        cmd: >
+          nmcli conn mod "System {{ ansible_default_ipv4.alias }}"
+          ipv4.dns "{{ ansible_default_ipv4.address }},{{ dns.forwarder1 }},{{ dns.forwarder2 }}"
+          nmcli conn up "System {{ ansible_default_ipv4.alias }}"
+      changed_when: true
+      failed_when: false
+
+- name: Ensure that we have the epel repository installed
+  ansible.builtin.dnf:
+    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+  when: ansible_distribution != "Fedora"
+
+- name: Install our Packages required by KVM
+  ansible.builtin.dnf:
+    name: "{{ virtualization_packages[ansible_distribution | lower] }}"
+    state: present
+  notify:
+    - Enable and Start libvirtd
+    - Restart libvirtd
+    - Start and Enable Tuned
+    - Set tuned profile
+  register: prepare_server_kvm_installed
+  tags:
+    - kvm
+
+- name: Install our python packages
+  ansible.builtin.pip:
+    name: "{{ pip_packages }}"
+    state: present
+  tags:
+    - kvm
+
+- name: Ensure our packages are up to date
+  ansible.builtin.dnf:
+    state: latest # noqa: package-latest
+    name: "*"
+    nobest: true
+  tags:
+    - kvm
+
+- name: Verify KVM module is loaded and supported by the hardware
+  when: prepare_server_kvm_installed.changed # noqa: no-handler
+  ansible.builtin.shell:
+    cmd: "set -o pipefail && lsmod | grep -i kvm"
+  register: prepare_server_kvm_supported
+  failed_when: prepare_server_kvm_supported.rc != 0
+  changed_when: prepare_server_kvm_supported.rc == 0
+  tags:
+    - kvm
+
+- name: Check /etc/systemd/network/10-mainif.network
+  ansible.builtin.stat:
+    path: /etc/systemd/network/10-mainif.network
+  register: prepare_server_stat_result
+  tags:
+    - network
+    - kvm
+
+- name: Add IPForward=ipv4 to /etc/systemd/network/10-mainif.network
+  when: prepare_server_stat_result.stat.exists
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/network/10-mainif.network
+    line: 'IPForward=ipv4'
+    insertafter: '^\[Network\]'
+    regexp: '^IPForward='
+  tags:
+    - network
+    - kvm
+
+- name: Ensure that the .ssh directory exists
+  ansible.builtin.file:
+    path: /root/.ssh
+    state: directory
+    owner: root
+    group: root
+    mode: 0744
+  tags:
+    - kvm
+    - network
+
+- name: Ensure that we have a .ssh config file
+  ansible.builtin.template:
+    src: config.j2
+    dest: /root/.ssh/config
+    owner: root
+    group: root
+    mode: 0600
+  tags:
+    - kvm
+    - network
+
+- name: Ensure we have a hosts entry incase our internal dns fails
+  ansible.builtin.template:
+    dest: /etc/hosts
+    src: hosts.j2
+    owner: root
+    group: root
+    mode: 0644
+
+...

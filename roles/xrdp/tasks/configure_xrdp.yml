@@ -10,7 +10,6 @@
       ansible.builtin.dnf:
         name: "{{ xrdp.packages.fedora.desktop }}"
         state: present
-      register: desktop_installed
 
     - name: Change default target to graphical.target # noqa: no-handler
       ansible.builtin.file:
@@ -19,7 +18,6 @@
         state: link
         owner: root
         group: root
-      when: desktop_installed is changed
       notify:
         - Reboot our system if the default desktop has changed
 
@@ -43,7 +41,6 @@
       ansible.builtin.dnf:
         name: "{{ xrdp.packages.redhat.desktop }}"
         state: present
-      register: desktop_installed
 
     - name: Change default target to graphical.target # noqa: no-handler
       ansible.builtin.file:
@@ -64,7 +61,6 @@
         state: present
       notify: Enable and start xrdp
       register: xrdp_installed
-
 
 - name: Ensure we allow our firewall to connect
   ansible.posix.firewalld:
