@@ -1,0 +1,46 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+fqdn: {{ vm_instance_name }}
+hostname: {{ vm_instance_name }}
+locale: "{{ locale }}"
+timezone: {{ timezone }}
+
+# allow password ssh authentication
+ssh_pwauth: true
+
+{%- if using_rhel is defined and using_rhel %}
+rh_subscription:
+  username: '{{ rhel_username }}'
+  password: '{{ rhel_password }}'
+  auto-attach: true
+  service-level: self-support
+{%- endif %}
+
+users:
+  - name: {{ admin_user }}
+    gecos: {{ admin_gecos }}
+    groups: {{ admin_groups }}
+    shell: /bin/bash
+    plain_text_passwd: {{ admin_password }}
+    lock_passwd: false
+  - name: root
+    plain_text_passwd: {{ root_password }}
+    lock_passwd: false
+
+packages:
+  - python3
+  - python3-pip
+  - firewalld
+  - sshpass
+  - vim
+  - git
+  - "@container-tools"
+
+runcmd:
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, firewalld ]
+  - [ systemctl, start, --no-block, firewalld ]

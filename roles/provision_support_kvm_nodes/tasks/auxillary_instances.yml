@@ -1,0 +1,21 @@
+---
+
+- name: Create our vm
+  ansible.builtin.include_tasks: kvm_machine.yml # noqa: var-naming[no-role-prefix]
+  when:
+    - instance.vm_instance_name not in running_vms.list_vms
+  vars:
+    vm_instance_name: "{{ instance.vm_instance_name | default('bastion.' + cluster_id + '.' + networking_defaults.tld) }}"
+    vm_extra_disks: "{{ instance.vm_extra_disks | default([]) }}"
+    vm_memory_size: "{{ instance.vm_memory_size | default(nodes.bastion.ram) }}"
+    vm_vcpu: "{{ instance.vm_vcpu | default(nodes.nodes.cpus)}}"
+    vm_root_disk_size: "{{ instance.vm_root_disk_size | default(100) | replace('G','') }}"
+    vm_network: "{{ networking.bridge_name | default('br0') }}"
+    vm_interface_name: "{{ instance.vm_interface_name | default('eth0')}}"
+    vm_ip_addr: "{{ instance.ipaddr | default('192.168.160.10')}}"
+    vm_prefix: "{{ networking_defaults.prefix }}"
+    vm_gateway: "{{ networking_defaults.gateway }}"
+    vm_primary_ns: "{{ instance.primary_ns | default('192.168.160.10')}}"
+  loop: "{{ instances }}"
+  loop_control:
+    loop_var: instance

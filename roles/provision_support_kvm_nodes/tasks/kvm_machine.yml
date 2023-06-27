@@ -1,0 +1,86 @@
+---
+
+- name: "Get our qcow2 image for our {{ vm_role }} instance {{ vm_instance_name }} from s3"
+  when: qemu_images_from_s3 | default(false) | bool
+  amazon.aws.s3_object:
+    bucket: "{{ nodes.image.bucket }}"
+    object: "{{ nodes[vm_role].name }}"
+    dest: "/var/lib/libvirt/images/{{ vm_instance_name }}.qcow2"
+    mode: get
+    overwrite: different
+    region: "{{ s3_region }}"
+    s3_url: "{{ s3_url }}"
+    validate_certs: "{{ s3_validate_certs | default(true) | bool }}"
+    aws_access_key: "{{ s3_access_key_id }}"
+    aws_secret_key: "{{ s3_secret_access_key }}"
+
+- name: "Get our qcow2 image for our {{ vm_role }} instance {{ vm_instance_name }} from the web"
+  when: not qemu_images_from_s3 | default(false) | bool
+  ansible.builtin.get_url:
+    url: "{{ nodes[vm_role].url + nodes[vm_role].name }}"
+    dest: "/var/lib/libvirt/images/{{ vm_instance_name }}.qcow2"
+    checksum: "sha256:{{ nodes[vm_role].checksum }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Render our meta and user data files
+  ansible.builtin.template:
+    dest: "/var/lib/libvirt/images/{{ vm_instance_name }}-{{ prefix }}-data.cfg"
+    src: "{{ prefix }}-data.yaml.j2"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - user
+    - meta
+  loop_control:
+    loop_var: prefix
+
+- name: Copy our network config to the vm
+  ansible.builtin.command:
+    cmd: >
+      virt-customize
+        -a {{ vm_instance_name }}.qcow2
+        --copy-in ./{{ vm_instance_name }}-meta-data.cfg:/etc/cloud/cloud.cfg.d/
+  failed_when: false
+  changed_when: true
+  args:
+    chdir: /var/lib/libvirt/images/
+
+- name: Resize our root partition on the instance
+  ansible.builtin.command:
+    cmd: >
+       qemu-img resize {{ vm_instance_name }}.qcow2 {{ vm_root_disk_size }}
+  failed_when: false
+  changed_when: true
+  args:
+    chdir: /var/lib/libvirt/images/
+
+- name: Create our vm
+  ansible.builtin.command:
+    cmd: >
+      virt-install
+        --name {{ vm_instance_name }}
+        --memory {{ vm_memory_size | default(nodes[vm_role].ram) }}
+        --vcpus {{ vm_vcpu | default(nodes[vm_role].cpus) }}
+        --disk=size={{ vm_root_disk_size | replace('G','') }},backing_store="./{{ vm_instance_name }}.qcow2"
+        {% for disk in vm_extra_disks %}
+        --disk path=./{{ vm_instance_name }}-{{ disk.device }}.qcow2,format=qcow2,size={{ disk.size | replace('G','')  }}
+        {% endfor %}
+        --import
+        --os-variant {{ nodes[vm_role].os_variant}}
+        --cloud-init user-data=./{{ vm_instance_name }}-user-data.cfg
+        --network bridge={{ vm_network }},model=virtio
+        --graphics none
+        --noautoconsole
+        --accelerate
+        --autostart
+  register: provision_support_kvm_nodes_vm_create
+  failed_when: provision_support_kvm_nodes_vm_create.rc != 0
+  changed_when: provision_support_kvm_nodes_vm_create.rc == 0
+  args:
+    chdir: /var/lib/libvirt/images/
+
+
+...
