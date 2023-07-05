@@ -10,6 +10,21 @@ dns:
   forwarder2: 1.1.1.1
   domain: openshift.local
 
+el_packages: &EL_PACKAGES
+  - "@Development Tools"
+  - "@virtualization-hypervisor"
+  - "@virtualization-client"
+  - "@virtualization-platform"
+  - "@virtualization-tools"
+  - python3-lxml
+  - python3-pip
+  - python3-devel
+  - python3-requests-oauthlib
+  - cronie
+  - bridge-utils
+  - libguestfs-tools
+  - tuned
+
 virtualization_packages:
   fedora:
     - "@virtualization"
@@ -19,31 +34,9 @@ virtualization_packages:
     - cronie
     - bridge-utils
     - tuned
-  redhat:
-    - "@Development Tools"
-    - "@virtualization-hypervisor"
-    - "@virtualization-client"
-    - "@virtualization-platform"
-    - "@virtualization-tools"
-    - python3-lxml
-    - python3-pip
-    - python3-devel
-    - python3-requests-oauthlib
-    - cronie
-    - bridge-utils
-    - libguestfs-tools
-    - tuned
-  rocky:
-    - "@virtualization-hypervisor"
-    - "@virtualization-client"
-    - "@virtualization-platform"
-    - "@virtualization-tools"
-    - python3-lxml
-    - python3-pip
-    - python3-requests-oauthlib
-    - cronie
-    - bridge-utils
-    - tuned
+  redhat: *EL_PACKAGES
+  rocky: *EL_PACKAGES
+  almalinux: *EL_PACKAGES
 
 pip_packages:
   - openshift
