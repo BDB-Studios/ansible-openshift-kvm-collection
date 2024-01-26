@@ -23,6 +23,7 @@
     owner: root
     group: root
     mode: 0644
+    force: "{{ nodes[vm_role].overwrite }}"
 
 - name: Render our meta and user data files
   ansible.builtin.template:

@@ -11,6 +11,7 @@ nodes:
     os_variant: "{{ bastion_kvm_variant | default('rhel8-unknown') }}"
     ram: "{{ bastion_kvm_ram | default(16384) }}"
     cpus: "{{ bastion_kvm_cpus | default(8) }}"
+    overwrite: "{{ bastion_overwrite_kvm | default(false) }}"
   vault:
     name: "{{ vault_kvm_image | default('AlmaLinux-8-GenericCloud-latest.x86_64.qcow2') }}"
     url: "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/"
