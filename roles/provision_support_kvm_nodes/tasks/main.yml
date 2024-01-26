@@ -64,7 +64,7 @@
         control_planes: []
         workers: []
         use_bridge: true
-        network_bridge_name: "{{ networking.bridge_name }}"
+        network_bridge_name: "{{ networking.bridge_name | default('br0') }}"
 
 - name: Create our auxillary instances when required
   when:

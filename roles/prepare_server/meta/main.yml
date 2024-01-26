@@ -13,6 +13,7 @@ galaxy_info:
         - "36"
         - "37"
         - "38"
+        - "39"
     - name: EL
       versions:
         - "8"
