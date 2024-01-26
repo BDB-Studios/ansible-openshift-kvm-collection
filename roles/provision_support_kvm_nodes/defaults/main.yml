@@ -6,9 +6,9 @@ nodes:
     bucket: "kvm-qemu-images"
   bastion:
     name: "{{ bastion_kvm_image | default('AlmaLinux-8-GenericCloud-latest.x86_64.qcow2') }}"
-    url: "{{ bastion_kvm_url | default('bastion_kvm_checksum') }}"
+    url: "{{ bastion_kvm_url | default('https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/') }}"
     checksum: "{{ bastion_kvm_checksum | default('c0ad09255d91288dac590d99c95197d83a2846f1bcbec3f4222fb04265a2a4d7') }}"
-    os_variant: "{{ bastion_kvm_variant | default('bastion_kvm_checksum') }}"
+    os_variant: "{{ bastion_kvm_variant | default('rhel8-unknown') }}"
     ram: "{{ bastion_kvm_ram | default(16384) }}"
     cpus: "{{ bastion_kvm_cpus | default(8) }}"
   vault:
