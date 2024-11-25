@@ -33,7 +33,7 @@
         vm_memory_size: "{{ kvm.bastion.vm_memory_size | default(nodes.bastion.ram) }}"
         vm_vcpu: "{{ kvm.bastion.vm_vcpu | default(nodes.nodes.cpus)}}"
         vm_root_disk_size: "{{ kvm.bastion.vm_root_disk_size | default(100) | replace('G','') }}"
-        vm_network: "{{ networking.bridge_name | default('br0') }}"
+        vm_network: "{{ network_bridge_name | default('br0') }}"
         vm_interface_name: "{{ kvm.bastion.vm_interface_name | default('eth0')}}"
         vm_ip_addr: "{{ kvm.bastion.ipaddr | default('192.168.160.10')}}"
         vm_prefix: "{{ networking_defaults.prefix }}"
