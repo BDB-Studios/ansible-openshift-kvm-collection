@@ -20,7 +20,7 @@
     - kvm
 
 - name: Create our KVM Network
-  when: not use_bridge | default(false)
+  when: use_bridge | default(false)
   ansible.builtin.include_tasks: create_network.yml
   tags:
     - network

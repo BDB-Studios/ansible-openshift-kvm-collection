@@ -41,8 +41,4 @@
       failed_when: false
       changed_when: true
 
-- name: Export our facts
-  ansible.builtin.setup:
-  register: prepare_server_virt_net_facts
-
 ...
